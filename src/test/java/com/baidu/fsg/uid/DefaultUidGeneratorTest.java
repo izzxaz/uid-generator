@@ -26,7 +26,7 @@ import com.baidu.fsg.uid.impl.DefaultUidGenerator;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = { "classpath:uid/default-uid-spring.xml" })
 public class DefaultUidGeneratorTest {
-    private static final int SIZE = 100000; // 10w
+    private static final int SIZE = 1; // 10w
     private static final boolean VERBOSE = true;
     private static final int THREADS = Runtime.getRuntime().availableProcessors() << 1;
 
@@ -38,14 +38,14 @@ public class DefaultUidGeneratorTest {
      */
     @Test
     public void testSerialGenerate() {
-        // Generate UID serially
-        Set<Long> uidSet = new HashSet<>(SIZE);
-        for (int i = 0; i < SIZE; i++) {
-            doGenerate(uidSet, i);
-        }
+	// Generate UID serially
+	Set<Long> uidSet = new HashSet<>(SIZE);
+	for (int i = 0; i < SIZE; i++) {
+	    doGenerate(uidSet, i);
+	}
 
-        // Check UIDs are all unique
-        checkUniqueID(uidSet);
+	// Check UIDs are all unique
+	checkUniqueID(uidSet);
     }
 
     /**
@@ -55,68 +55,68 @@ public class DefaultUidGeneratorTest {
      */
     @Test
     public void testParallelGenerate() throws InterruptedException {
-        AtomicInteger control = new AtomicInteger(-1);
-        Set<Long> uidSet = new ConcurrentSkipListSet<>();
+	AtomicInteger control = new AtomicInteger(-1);
+	Set<Long> uidSet = new ConcurrentSkipListSet<>();
 
-        // Initialize threads
-        List<Thread> threadList = new ArrayList<>(THREADS);
-        for (int i = 0; i < THREADS; i++) {
-            Thread thread = new Thread(() -> workerRun(uidSet, control));
-            thread.setName("UID-generator-" + i);
+	// Initialize threads
+	List<Thread> threadList = new ArrayList<>(THREADS);
+	for (int i = 0; i < THREADS; i++) {
+	    Thread thread = new Thread(() -> workerRun(uidSet, control));
+	    thread.setName("UID-generator-" + i);
 
-            threadList.add(thread);
-            thread.start();
-        }
+	    threadList.add(thread);
+	    thread.start();
+	}
 
-        // Wait for worker done
-        for (Thread thread : threadList) {
-            thread.join();
-        }
+	// Wait for worker done
+	for (Thread thread : threadList) {
+	    thread.join();
+	}
 
-        // Check generate 10w times
-        Assert.assertEquals(SIZE, control.get());
+	// Check generate 10w times
+	Assert.assertEquals(SIZE, control.get());
 
-        // Check UIDs are all unique
-        checkUniqueID(uidSet);
+	// Check UIDs are all unique
+	checkUniqueID(uidSet);
     }
 
     /**
      * Worker run
      */
     private void workerRun(Set<Long> uidSet, AtomicInteger control) {
-        for (;;) {
-            int myPosition = control.updateAndGet(old -> (old == SIZE ? SIZE : old + 1));
-            if (myPosition == SIZE) {
-                return;
-            }
+	for (;;) {
+	    int myPosition = control.updateAndGet(old -> (old == SIZE ? SIZE : old + 1));
+	    if (myPosition == SIZE) {
+		return;
+	    }
 
-            doGenerate(uidSet, myPosition);
-        }
+	    doGenerate(uidSet, myPosition);
+	}
     }
 
     /**
      * Do generating
      */
     private void doGenerate(Set<Long> uidSet, int index) {
-        long uid = uidGenerator.getUID();
-        String parsedInfo = uidGenerator.parseUID(uid);
-        uidSet.add(uid);
+	long uid = uidGenerator.getUID();
+	String parsedInfo = uidGenerator.parseUID(uid);
+	uidSet.add(uid);
 
-        // Check UID is positive, and can be parsed
-        Assert.assertTrue(uid > 0L);
-        Assert.assertTrue(StringUtils.isNotBlank(parsedInfo));
+	// Check UID is positive, and can be parsed
+	Assert.assertTrue(uid > 0L);
+	Assert.assertTrue(StringUtils.isNotBlank(parsedInfo));
 
-        if (VERBOSE) {
-            System.out.println(Thread.currentThread().getName() + " No." + index + " >>> " + parsedInfo);
-        }
+	if (VERBOSE) {
+	    System.out.println(Thread.currentThread().getName() + " No." + index + " >>> " + parsedInfo);
+	}
     }
 
     /**
      * Check UIDs are all unique
      */
     private void checkUniqueID(Set<Long> uidSet) {
-        System.out.println(uidSet.size());
-        Assert.assertEquals(SIZE, uidSet.size());
+	System.out.println(uidSet.size());
+	Assert.assertEquals(SIZE, uidSet.size());
     }
 
 }
